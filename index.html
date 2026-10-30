@@ -214,14 +214,11 @@ async function generate() {
   if (BULK) return generateBulk();
   if (!S.img || S.busy) return;
   
-  // এখানে অ্যাক্সেস কোডের প্রম্পটটি বাদ দেওয়া হয়েছে
-  let code = ''; 
-
   S.busy = true; $('busy').classList.add('on'); $('go').disabled = true; right(null);
   try {
     draw(false); const pb = new Promise((ok, no) => cv.toBlob(b => b ? ok(b) : no(new Error('ক্রপ ব্যর্থ')), 'image/jpeg', .95)); draw(); const blob = await pb; S.before = URL.createObjectURL(blob);
     const fd = new FormData(); fd.append('prompt', buildPrompt()); fd.append('image', blob, 'photo.jpg');
-    const r = await fetch('/api/ai-photo', { method: 'POST', headers: { 'x-access-code': code }, body: fd });
+    const r = await fetch('/api/ai-photo', { method: 'POST', body: fd });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || 'এআই ত্রুটি');
     right(await finalize('data:image/jpeg;base64,' + j.image));
@@ -259,14 +256,13 @@ function rightMany(urls, err) {
 }
 async function generateBulk() {
   if (S.busy || !S.imgs.length) return;
-  let code = '';
   S.busy = true; $('busy').classList.add('on'); $('go').disabled = true;
   const urls = [], pr = buildPrompt();
   try {
     for (const i of S.imgs) {
       const blob = await new Promise(ok => cover(i).toBlob(ok, 'image/jpeg', .95));
       const fd = new FormData(); fd.append('prompt', pr); fd.append('image', blob, 'p.jpg');
-      const r = await fetch('/api/ai-photo', { method: 'POST', headers: { 'x-access-code': code }, body: fd });
+      const r = await fetch('/api/ai-photo', { method: 'POST', body: fd });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.error || 'এআই ত্রুটি');
       urls.push(await finalize('data:image/jpeg;base64,' + j.image)); rightMany(urls);
