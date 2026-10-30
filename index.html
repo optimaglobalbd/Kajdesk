@@ -64,11 +64,9 @@ canvas{max-width:100%;height:auto;max-height:540px;border-radius:12px;background
 const h = (t, p = {}, ...k) => { const e = document.createElement(t); Object.assign(e, p); e.append(...k); return e; };
 const $ = id => document.getElementById(id);
 
-// ছবির মাপ (সব প্রোফাইলে একই ৪৫×৫৫ মিমি অনুপাত)
 const PROFILES = [['পাসপোর্ট','🪪'],['ডুয়াল','👥'],['ই-পাস','📱'],['ভিসা','✈️'],['জন্ম','👶']];
 const COLORS = ['#FFFFFF','#2196F3','#03A9F4','#9E9E9E','#3068E1','#00897B','#FFF8DC'];
 
-// পোশাক: [লেবেল, আইকন, প্রম্পট-বর্ণনা]
 const KEEP = 'পরিবর্তন নয়';
 const WARD = [
  [KEEP,'🚫',''],
@@ -94,7 +92,6 @@ const WARD = [
  ['হিজাব + ফরমাল পোশাক','👩‍💼','a solid deep-blue hijab covering hair and neck with a crisp white formal collared blouse or blazer; no tie']
 ];
 
-// অতিরিক্ত নির্দেশনা (আপনার আগের কোডের প্রম্পট থেকে)
 const ENH = [
  ['ত্বক মসৃণ','✨','MANDATORY COMPLETE REMOVAL of every visible facial-skin mark: moles, freckles, acne marks, dark spots, scars, scratches and wounds; leave no remnant. Fill naturally from adjacent skin texture and lighting. Preserve exact face geometry, skin tone, age, expression and realistic pores; no whitening, blur or beauty filter.'],
  ['ছবি উজ্জ্বল','☀️','Slightly correct exposure and white balance for clear, even brightness. Protect highlights, preserve the original skin tone and do not whiten the face.'],
@@ -122,7 +119,7 @@ const ENH = [
  ['টুপি যোগ','🕋','Add one simple plain white prayer cap fitted naturally on the head; no logo or decoration; preserve forehead, ears and face shape.'],
  ['লিপস্টিক','💄','Apply subtle natural rose-toned lipstick strictly within the existing lip outline; no dramatic makeup or reshaping of the mouth.']
 ];
-// পরস্পরবিরোধী কমান্ড একসাথে নেওয়া যায় না
+
 const EXC = [['ত্বক মসৃণ','তিল/দাগ রাখা'],['চশমা বাদ','চশমা রাখা'],['দাড়ি বাদ','দাড়ি ও মোচ যোগ','দাড়ি রাখা'],['ক্যাপ বাদ','টুপি যোগ']];
 function toggle(l) { if (S.enh.has(l)) return S.enh.delete(l); EXC.filter(g => g.includes(l)).flat().forEach(x => S.enh.delete(x)); S.enh.add(l); }
 
@@ -150,7 +147,6 @@ function left() {
     custom, go);
 }
 
-// এআই-কে পাঠানো সম্পূর্ণ প্রম্পট: প্রতিটি সেটিংয়ের নিজস্ব কমান্ড যুক্ত হয়
 function buildPrompt() {
   const w = WARD.find(x => x[0] === S.ward);
   const parts = [
@@ -217,22 +213,22 @@ function right(url, err) {
 async function generate() {
   if (BULK) return generateBulk();
   if (!S.img || S.busy) return;
-  let code = localStorage.getItem('kd_code') || prompt('অ্যাক্সেস কোড দিন (সাইটের মালিকের কাছ থেকে নিন):');
-  if (!code) return;
+  
+  // এখানে অ্যাক্সেস কোডের প্রম্পটটি বাদ দেওয়া হয়েছে
+  let code = ''; 
+
   S.busy = true; $('busy').classList.add('on'); $('go').disabled = true; right(null);
   try {
-    // ক্রপ করা ছবিই পাঠানো হয়; ক্রপ ব্যর্থ হলে আসল ছবি পাঠানো হয় না
     draw(false); const pb = new Promise((ok, no) => cv.toBlob(b => b ? ok(b) : no(new Error('ক্রপ ব্যর্থ')), 'image/jpeg', .95)); draw(); const blob = await pb; S.before = URL.createObjectURL(blob);
     const fd = new FormData(); fd.append('prompt', buildPrompt()); fd.append('image', blob, 'photo.jpg');
     const r = await fetch('/api/ai-photo', { method: 'POST', headers: { 'x-access-code': code }, body: fd });
     const j = await r.json().catch(() => ({}));
-    if (r.status === 401) { localStorage.removeItem('kd_code'); throw new Error('অ্যাক্সেস কোড ভুল'); }
     if (!r.ok) throw new Error(j.error || 'এআই ত্রুটি');
-    localStorage.setItem('kd_code', code);
     right(await finalize('data:image/jpeg;base64,' + j.image));
   } catch (e) { right(null, e.message); }
   S.busy = false; $('busy').classList.remove('on'); $('go').disabled = false;
 }
+
 const BULK = new URLSearchParams(location.search).has('bulk');
 if (BULK) { document.title = 'বাল্ক ফটো এডিট — কাজডেস্ক'; document.querySelector('header span').textContent = '🖼️ বাল্ক ফটো এডিট (সর্বোচ্চ ৪টি)'; S.imgs = []; }
 async function loadAll(files) {
@@ -263,8 +259,7 @@ function rightMany(urls, err) {
 }
 async function generateBulk() {
   if (S.busy || !S.imgs.length) return;
-  const code = localStorage.getItem('kd_code') || prompt('অ্যাক্সেস কোড দিন:');
-  if (!code) return;
+  let code = '';
   S.busy = true; $('busy').classList.add('on'); $('go').disabled = true;
   const urls = [], pr = buildPrompt();
   try {
@@ -273,9 +268,7 @@ async function generateBulk() {
       const fd = new FormData(); fd.append('prompt', pr); fd.append('image', blob, 'p.jpg');
       const r = await fetch('/api/ai-photo', { method: 'POST', headers: { 'x-access-code': code }, body: fd });
       const j = await r.json().catch(() => ({}));
-      if (r.status === 401) { localStorage.removeItem('kd_code'); throw new Error('অ্যাক্সেস কোড ভুল'); }
       if (!r.ok) throw new Error(j.error || 'এআই ত্রুটি');
-      localStorage.setItem('kd_code', code);
       urls.push(await finalize('data:image/jpeg;base64,' + j.image)); rightMany(urls);
     }
   } catch (e) { rightMany(urls, e.message); }
