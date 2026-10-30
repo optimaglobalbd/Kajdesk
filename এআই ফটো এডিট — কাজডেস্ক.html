@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>এআই ফটো এডিট — কাজডেস্ক</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--a:#f59e0b;--a2:#ea580c;--ink:#1b1f3a;--m:#6b7280;--b:#ece7df}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.5 "Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif;color:#22262e;background:radial-gradient(1200px 500px at 70% -10%,#ffe9c7 0,transparent 60%),#f7f3ee;min-height:100vh}
+header{display:flex;align-items:center;gap:16px;padding:12px 28px;background:#ffffffd9;backdrop-filter:blur(10px);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:5}
+header a{text-decoration:none;color:#0f766e;font-weight:700;font-size:20px}
+header span{background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;border-radius:999px;padding:4px 14px;font-weight:600}
+.app{display:grid;grid-template-columns:380px minmax(0,1fr) 300px;gap:20px;padding:22px 28px;max-width:1500px;margin:auto;align-items:start}
+.panel{background:#fff;border:1px solid var(--b);border-radius:20px;padding:20px;box-shadow:0 10px 30px #3a2a1008}
+h3{margin:18px 0 10px;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+h3:first-child{margin-top:0}
+h3::before{content:"";width:4px;height:16px;background:linear-gradient(var(--a),var(--a2));border-radius:4px;margin-right:8px}
+h3 em{margin-left:auto;font-style:normal;color:var(--m);font-weight:400;font-size:12px}
+.tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.tile{position:relative;border:2px solid transparent;background:#f5f2ee;border-radius:14px;padding:8px 2px;text-align:center;cursor:pointer;font:inherit;font-size:11px;color:#444;transition:.15s}
+.tile b{display:block;font-size:22px;font-weight:400}
+.tile:hover{background:#fbeed8}
+.tile.on{border-color:var(--a);background:#fff7e8;color:var(--a2);font-weight:600}
+.tile.on::after{content:"✓";position:absolute;top:-6px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--a);color:#fff;font-size:11px;display:grid;place-items:center}
+.sws{display:flex;flex-wrap:wrap;gap:10px}
+.sw{width:42px;height:42px;border-radius:12px;border:2px solid #fff;outline:1px solid #ddd;cursor:pointer;position:relative;padding:0}
+.sw.on{outline:3px solid var(--a)}
+input[type=color]{width:42px;height:42px;border:0;padding:0;border-radius:12px;background:none;cursor:pointer}
+textarea{width:100%;min-height:78px;border:1px solid var(--b);border-radius:12px;padding:10px;font:inherit;resize:vertical;margin-top:10px}
+.go{width:100%;margin-top:16px;border:0;border-radius:14px;padding:14px;font:600 16px inherit;color:#fff;background:linear-gradient(135deg,var(--a),var(--a2));cursor:pointer;box-shadow:0 8px 20px #ea580c40}
+.go:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.stage{background:linear-gradient(160deg,#1b1f3a,#262b52);border-radius:24px;min-height:620px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;color:#fff;box-shadow:0 20px 50px #1b1f3a40;position:relative}
+.drop{width:100%;max-width:420px;border:2px dashed #ffffff40;border-radius:20px;padding:48px 24px;text-align:center;cursor:pointer;transition:.2s}
+.drop:hover,.drop.over{border-color:var(--a);background:#ffffff0a}
+.drop .ic{width:72px;height:72px;margin:0 auto 14px;border-radius:50%;background:#ffffff14;display:grid;place-items:center;font-size:32px}
+.drop p{color:#b9bdd6;margin:6px 0 18px}
+.up{display:inline-block;background:linear-gradient(135deg,var(--a),var(--a2));border-radius:12px;padding:10px 24px;font-weight:600}
+canvas{max-width:100%;height:auto;max-height:540px;border-radius:12px;background:#fff;touch-action:none;cursor:grab;box-shadow:0 12px 30px #0006}
+.ctl{display:flex;gap:14px;align-items:center;margin-top:16px;color:#cfd2e8;flex-wrap:wrap;justify-content:center}
+.ctl input{accent-color:var(--a)}
+.ghost{background:#ffffff1a;color:#fff;border:0;border-radius:10px;padding:8px 14px;font:inherit;cursor:pointer}
+.busy{position:absolute;inset:0;background:#1b1f3acc;border-radius:24px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:2}
+.busy.on{display:flex}
+.spin{width:46px;height:46px;border:4px solid #ffffff30;border-top-color:var(--a);border-radius:50%;animation:s 1s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+.res img{width:100%;border-radius:14px;border:1px solid var(--b);margin-bottom:12px}
+.res .empty{color:var(--m);text-align:center;padding:30px 10px;background:#faf7f2;border-radius:14px}
+.btn{display:block;text-align:center;text-decoration:none;border:0;width:100%;background:#0f766e;color:#fff;border-radius:12px;padding:10px;font:600 14px inherit;cursor:pointer;margin-top:8px}
+.note{font-size:12px;color:var(--m);margin-top:14px}
+.err{color:#b91c1c;margin-top:8px;font-size:13px}
+@media(max-width:1150px){.app{grid-template-columns:1fr;padding:14px}.stage{min-height:420px}}
+</style>
+</head>
+<body>
+<header><a href="index.html">← কাজডেস্ক</a><span>🪄 এআই ফটো এডিট</span></header>
+<div class="app">
+  <section class="panel" id="left"></section>
+  <section class="stage" id="stage"></section>
+  <aside class="panel res" id="right"></aside>
+</div>
+<script>
+const h = (t, p = {}, ...k) => { const e = document.createElement(t); Object.assign(e, p); e.append(...k); return e; };
+const $ = id => document.getElementById(id);
+
+// ছবির মাপ (সব প্রোফাইলে একই ৪৫×৫৫ মিমি অনুপাত)
+const PROFILES = [['পাসপোর্ট','🪪'],['ডুয়াল','👥'],['ই-পাস','📱'],['ভিসা','✈️'],['জন্ম','👶']];
+const COLORS = ['#FFFFFF','#2196F3','#03A9F4','#9E9E9E','#3068E1','#00897B','#FFF8DC'];
+
+// পোশাক: [লেবেল, আইকন, প্রম্পট-বর্ণনা]
+const KEEP = 'পরিবর্তন নয়';
+const WARD = [
+ [KEEP,'🚫',''],
+ ['শার্ট','👔','a plain bright-white formal button-down shirt with a crisp pointed collar and full sleeves; no jacket, no tie, no logo'],
+ ['পোলো টি-শার্ট','👕','a solid deep-navy short-sleeved polo shirt with a classic fold-over collar; no logo or jacket'],
+ ['স্যুট','🤵','a tailored dark-navy business suit jacket with notch lapels over a crisp white collared shirt and a dark-burgundy necktie'],
+ ['স্যুট (টাই ছাড়া)','🕴️','a tailored dark-navy business suit jacket over a crisp white collared shirt worn open at the neck; absolutely no tie'],
+ ['কোট + টাই','🧥','a structured charcoal formal coat with dark lapels over a crisp white collared shirt and a solid burgundy necktie'],
+ ['শাড়ি','🥻','a traditional deep-red sari with a narrow gold border and matching modest red blouse, neatly draped in classic South Asian style'],
+ ['হিজাব','🧕','a solid brick-red modest hijab covering hair and neck with a simple neutral modest top; keep the entire face visible'],
+ ['পাঞ্জাবি','👘','a plain white long-sleeved panjabi with a short stand collar and a neat vertical button placket; no jacket, no tie'],
+ ['টপস','👚','a solid red modest women\'s top with a simple rounded neckline and short sleeves; no print or logo'],
+ ['রাউন্ড-কলার টি-শার্ট','🎽','a solid royal-blue short-sleeved crew-neck T-shirt; no buttons, logo or jacket'],
+ ['কামিজ + হিজাব','🧕','a modest light-blue and teal salwar kameez with a coordinated blue hijab covering hair and neck; face visible'],
+ ['শাড়ি + হিজাব','🥻','a charcoal-black sari with a coordinated dark hijab covering hair and neck; face visible; not an abaya'],
+ ['ওড়না + কামিজ','🧣','a teal South Asian kameez with a purple-lavender orna draped over the shoulders and head; a scarf, not a face veil'],
+ ['ডিজাইন শাড়ি','🌸','a royal-blue patterned sari with a delicate floral motif, a narrow gold border and a matching blouse'],
+ ['জ্যাকেট','🧥','a light-blue formal jacket with lapels over a clean white collared shirt; no tie'],
+ ['আবায়া (নারী)','🖤','a loose full-length plain black abaya with a matching black hijab; face fully visible'],
+ ['থোব (পুরুষ)','🕌','a plain white long-sleeved thobe with a subtle stand collar and neat placket; no head covering, jacket or tie'],
+ ['থোব + গুত্রা (পুরুষ)','🧔','a plain white thobe with a traditional white ghutra headscarf secured by a black agal; face visible'],
+ ['হাতাবিহীন জ্যাকেট','🦺','a charcoal-gray sleeveless formal waistcoat over a crisp white long-sleeved collared shirt; no tie'],
+ ['হিজাব + ফরমাল পোশাক','👩‍💼','a solid deep-blue hijab covering hair and neck with a crisp white formal collared blouse or blazer; no tie']
+];
+
+// অতিরিক্ত নির্দেশনা (আপনার আগের কোডের প্রম্পট থেকে)
+const ENH = [
+ ['ত্বক মসৃণ','✨','MANDATORY COMPLETE REMOVAL of every visible facial-skin mark: moles, freckles, acne marks, dark spots, scars, scratches and wounds; leave no remnant. Fill naturally from adjacent skin texture and lighting. Preserve exact face geometry, skin tone, age, expression and realistic pores; no whitening, blur or beauty filter.'],
+ ['ছবি উজ্জ্বল','☀️','Slightly correct exposure and white balance for clear, even brightness. Protect highlights, preserve the original skin tone and do not whiten the face.'],
+ ['স্টুডিও লাইটিং','💡','Apply soft professional studio key and fill lighting with gentle realistic shadows. Do not change facial shape, skin tone or identity.'],
+ ['মাথা সোজা','🙂','Reduce visible head tilt toward a natural upright portrait position only when feasible; do not stretch or reshape the face.'],
+ ['চুল ঠিক','💇','Neatly groom only stray hairs and flyaways. Preserve the hairline, hairstyle, length, color and volume.'],
+ ['হাফ বডি','🧍','Extend the framing naturally to show the upper torso and shoulders if the source allows; preserve proportions and identity.'],
+ ['কান দেখাও','👂','Make the ears visible by gently moving only hair that covers them; preserve ear shape and head width.'],
+ ['খোলা চোখ','👁️','If the eyes are closed, open them naturally using the same person\'s eye shape and iris color; preserve gaze and expression.'],
+ ['মুখ বন্ধ','😐','If the lips are parted, close the mouth gently into a natural neutral expression; preserve lip outline and jaw geometry.'],
+ ['চশমা বাদ','👓','Remove the existing eyeglasses only and naturally reconstruct the small areas they obscure; add no replacement eyewear.'],
+ ['দাড়ি বাদ','🪒','Remove beard hair only, blending the exposed skin naturally; preserve jawline, mouth and identity; keep a distinct moustache if present.'],
+ ['সামনে তাকানো','🎯','Gently orient the gaze and head toward the camera for a front-facing portrait; do not warp facial features.'],
+ ['ক্যাপ বাদ','🧢','Remove an existing cap only; reconstruct hair underneath only where the source supports it; preserve the hairline and head shape.'],
+ ['তৈলাক্ত ত্বক','🧴','Reduce only excessive oily specular shine on the skin; preserve natural complexion, pores, texture and identity; do not lighten or recolor the skin.'],
+ ['স্কুল ড্রেস রাখা','🎒','Keep the source school uniform exactly unchanged, including colors, collar, tie and badges; do not replace, recolor, add or remove uniform items.'],
+ ['নেমপ্লেট / ব্যাজ','🏷️','Add one small realistic blank nameplate or generic badge on the chest only; no readable text, school name or logo; keep all other clothing unchanged.'],
+ ['চশমা রাখা','🤓','If present in the source, preserve the same eyeglasses, frame shape, color and position without distortion; if absent, do not add glasses.'],
+ ['দাড়ি ও মোচ যোগ','🧔','Add a natural, neatly groomed beard and moustache matching the person\'s apparent age and hair color; change only facial hair, not face shape or jaw.'],
+ ['দাড়ি রাখা','🧔‍♂️','Preserve the source beard exactly in shape, length, density and color; if no beard is present, add none.'],
+ ['গোঁফ রাখা','👨','Preserve the source moustache exactly in shape, length and color; if none is present, add none.'],
+ ['তিল/দাগ রাখা','🔘','Preserve all visible natural moles, scars and identifying marks in their original positions; do not remove, duplicate or add any mark.'],
+ ['নাক ফুল রাখুন','💎','Preserve an existing nose pin or ring exactly as shown (side, size, color); if none is visible, do not add one.'],
+ ['চুল যোগ','🦱','Naturally fill only visibly sparse or missing scalp hair using the source hair color and texture; keep the existing hairstyle and hairline.'],
+ ['টুপি যোগ','🕋','Add one simple plain white prayer cap fitted naturally on the head; no logo or decoration; preserve forehead, ears and face shape.'],
+ ['লিপস্টিক','💄','Apply subtle natural rose-toned lipstick strictly within the existing lip outline; no dramatic makeup or reshaping of the mouth.']
+];
+// পরস্পরবিরোধী কমান্ড একসাথে নেওয়া যায় না
+const EXC = [['ত্বক মসৃণ','তিল/দাগ রাখা'],['চশমা বাদ','চশমা রাখা'],['দাড়ি বাদ','দাড়ি ও মোচ যোগ','দাড়ি রাখা'],['ক্যাপ বাদ','টুপি যোগ']];
+function toggle(l) { if (S.enh.has(l)) return S.enh.delete(l); EXC.filter(g => g.includes(l)).flat().forEach(x => S.enh.delete(x)); S.enh.add(l); }
+
+const S = { profile: 'পাসপোর্ট', bg: COLORS[0], ward: KEEP, enh: new Set(['ত্বক মসৃণ','ছবি উজ্জ্বল','মাথা সোজা']), img: null, z: 1, ox: 0, oy: 0, busy: false };
+const W = 450, H = 550;
+let cv, cx;
+
+function tile(icon, label, on, fn) { return h('button', { className: 'tile' + (on ? ' on' : ''), onclick: fn }, h('b', {}, icon), label); }
+
+function left() {
+  try { localStorage.setItem('kd_set', JSON.stringify({ profile: S.profile, bg: S.bg, ward: S.ward, enh: [...S.enh] })); } catch (e) {}
+  const custom = h('textarea', { id: 'custom', placeholder: 'নিজের নির্দেশনা লিখুন (ঐচ্ছিক)…' });
+  const old = $('custom'); if (old) custom.value = old.value;
+  const sw = COLORS.map(c => h('button', { className: 'sw' + (S.bg === c ? ' on' : ''), style: `background:${c}`, onclick: () => { S.bg = c; left(); draw(); } }));
+  const pick = h('input', { type: 'color', value: S.bg, onchange: e => { S.bg = e.target.value.toUpperCase(); left(); draw(); } });
+  const go = h('button', { className: 'go', id: 'go', disabled: !S.img || S.busy, onclick: generate }, '🪄 ফটো জেনারেট করুন');
+  $('left').replaceChildren(
+    h('h3', {}, 'ছবি তৈরির সেটিংস'),
+    h('h3', {}, 'ছবির মাপ'), h('div', { className: 'tiles' }, ...PROFILES.map(([l, i]) => tile(i, l, S.profile === l, () => { S.profile = l; left(); }))),
+    h('h3', {}, 'ব্যাকগ্রাউন্ড'), h('div', { className: 'sws' }, ...sw, pick),
+    h('h3', {}, 'পোশাক স্টাইল', h('em', {}, `${WARD.length - 1} টি`)),
+    h('div', { className: 'tiles', style: 'grid-template-columns:repeat(4,1fr)' }, ...WARD.map(([l, i]) => tile(i, l, S.ward === l, () => { S.ward = l; left(); }))),
+    h('h3', {}, 'অতিরিক্ত নির্দেশনা', h('em', {}, `${S.enh.size}/${ENH.length}`)),
+    h('div', { className: 'tiles', style: 'grid-template-columns:repeat(4,1fr)' }, ...ENH.map(([l, i]) => tile(i, l, S.enh.has(l), () => { toggle(l); left(); }))),
+    custom, go);
+}
+
+// এআই-কে পাঠানো সম্পূর্ণ প্রম্পট: প্রতিটি সেটিংয়ের নিজস্ব কমান্ড যুক্ত হয়
+function buildPrompt() {
+  const w = WARD.find(x => x[0] === S.ward);
+  const parts = [
+    'Edit this real passport-style portrait photo. Keep the exact same person: identical face shape, eye/nose/lip geometry, skin tone, age and expression. Output a front-facing, centered head-and-shoulders photo in a 45x55 mm (portrait) ratio suitable for a ' + S.profile + ' document.',
+    `Replace the background with a plain, evenly lit solid ${S.bg} backdrop with no gradient, shadow or texture; keep clean natural hair edges.`,
+    w[2] ? `Change only the clothing to "${w[0]}" exactly: ${w[2]}. Treat the outfit as a strict specification; do not add or remove an unrequested tie, jacket, pattern, head covering or jewelry. Only the named clothing and head covering may change.`
+         : 'Keep the original clothing exactly as it is; do not replace, recolor or restyle any clothing or accessories.',
+    ...ENH.filter(e => S.enh.has(e[0])).map(e => e[2])
+  ];
+  const c = $('custom').value.trim(); if (c) parts.push('Additional user instruction: ' + c);
+  parts.push('No text, watermark, logo, cartoon or beauty-filter look. Photorealistic result.');
+  return parts.join('\n');
+}
+
+function stage() {
+  const st = $('stage');
+  if (BULK && S.img) return bulkStage();
+  const busy = h('div', { className: 'busy', id: 'busy' }, h('div', { className: 'spin' }), 'এআই ছবি তৈরি করছে… ৩০–৬০ সেকেন্ড লাগতে পারে');
+  if (!S.img) {
+    const f = h('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', hidden: true, multiple: BULK, onchange: e => loadAll(e.target.files) });
+    const d = h('div', { className: 'drop', onclick: () => f.click() },
+      h('div', { className: 'ic' }, '🖼️'), h('h2', { style: 'margin:0' }, 'একটি ছবি আপলোড করুন'),
+      h('p', {}, 'ক্লিক করুন বা ছবি টেনে আনুন (৪৫×৫৫ মিমি), সর্বোচ্চ ৮ MB'), h('span', { className: 'up' }, '⬆ ছবি আপলোড করুন'), f);
+    d.ondragover = e => { e.preventDefault(); d.classList.add('over'); };
+    d.ondragleave = () => d.classList.remove('over');
+    d.ondrop = e => { e.preventDefault(); loadAll(e.dataTransfer.files); };
+    st.replaceChildren(d, busy); return;
+  }
+  cv = h('canvas', { width: W, height: H }); cx = cv.getContext('2d');
+  let drag = null;
+  cv.onpointerdown = e => { drag = [e.clientX, e.clientY, S.ox, S.oy]; cv.setPointerCapture(e.pointerId); };
+  cv.onpointermove = e => { if (!drag) return; const k = W / cv.getBoundingClientRect().width; S.ox = drag[2] + (e.clientX - drag[0]) * k; S.oy = drag[3] + (e.clientY - drag[1]) * k; draw(); };
+  cv.onpointerup = () => drag = null;
+  const z = h('input', { type: 'range', min: 1, max: 3, step: .01, value: S.z, oninput: e => { S.z = +e.target.value; draw(); } });
+  st.replaceChildren(cv, h('div', { className: 'ctl' }, '🔍 জুম', z, h('button', { className: 'ghost', onclick: () => { S.z = 1; S.ox = S.oy = 0; stage(); } }, 'রিসেট'),
+    h('button', { className: 'ghost', onclick: () => { S.img = null; stage(); left(); } }, 'ছবি বদলান')), h('p', { className: 'note', style: 'color:#9aa0c3' }, 'ছবি টেনে সরান; মুখ ডিম্বাকার গাইডে ও চোখ আড়াআড়ি দাগে আনুন (গাইড ফটোতে আসবে না)'), busy);
+  draw();
+}
+function draw(g = true) {
+  if (!cx) return;
+  cx.fillStyle = S.bg; cx.fillRect(0, 0, W, H);
+  const i = S.img; if (!i) return;
+  const s = Math.max(W / i.width, H / i.height) * S.z, w = i.width * s, hh = i.height * s;
+  cx.drawImage(i, (W - w) / 2 + S.ox, (H - hh) / 2 + S.oy, w, hh);
+  if (g) { cx.save(); cx.strokeStyle = 'rgba(245,158,11,.95)'; cx.lineWidth = 2; cx.setLineDash([8, 6]);
+    cx.beginPath(); cx.ellipse(W / 2, H * .42, W * .26, H * .3, 0, 0, 7); cx.stroke();
+    cx.beginPath(); cx.moveTo(W * .2, H * .36); cx.lineTo(W * .8, H * .36); cx.stroke(); cx.restore(); }
+}
+function load(f) {
+  if (!f) return;
+  if (!/^image\/(jpeg|png|webp)$/.test(f.type) || f.size > 8 * 1024 * 1024) return alert('JPG/PNG/WebP ছবি দিন (সর্বোচ্চ ৮ MB)');
+  const i = new Image(); i.onload = () => { S.img = i; S.z = 1; S.ox = S.oy = 0; stage(); left(); }; i.src = URL.createObjectURL(f);
+}
+
+function right(url, err) {
+  $('right').replaceChildren(h('h3', {}, 'ফলাফল'),
+    url ? h('div', {}, h('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;font-size:12px;color:#6b7280' }, h('div', {}, 'আগে', h('img', { src: S.before || url })), h('div', {}, 'পরে', h('img', { src: url }))), h('a', { className: 'btn', href: url, download: 'kajdesk-45x55.jpg' }, '⬇ ডাউনলোড (৪৫×৫৫ মিমি, ৩০০ DPI)'), sheetCtl(url),
+      h('button', { className: 'btn', style: 'background:#ea580c', onclick: generate }, '🔁 আবার তৈরি করুন'))
+    : h('div', { className: 'empty' }, '🪄', h('br'), 'ছবি দিয়ে সেটিংস ঠিক করুন, তারপর "ফটো জেনারেট করুন" চাপুন।'),
+    err ? h('div', { className: 'err' }, err) : '',
+    h('p', { className: 'note' }, 'এআই ১০০% face match নিশ্চিত করতে পারে না। ডকুমেন্টে ব্যবহারের আগে মুখ মিলিয়ে দেখুন।'));
+}
+
+async function generate() {
+  if (BULK) return generateBulk();
+  if (!S.img || S.busy) return;
+  let code = localStorage.getItem('kd_code') || prompt('অ্যাক্সেস কোড দিন (সাইটের মালিকের কাছ থেকে নিন):');
+  if (!code) return;
+  S.busy = true; $('busy').classList.add('on'); $('go').disabled = true; right(null);
+  try {
+    // ক্রপ করা ছবিই পাঠানো হয়; ক্রপ ব্যর্থ হলে আসল ছবি পাঠানো হয় না
+    draw(false); const pb = new Promise((ok, no) => cv.toBlob(b => b ? ok(b) : no(new Error('ক্রপ ব্যর্থ')), 'image/jpeg', .95)); draw(); const blob = await pb; S.before = URL.createObjectURL(blob);
+    const fd = new FormData(); fd.append('prompt', buildPrompt()); fd.append('image', blob, 'photo.jpg');
+    const r = await fetch('/api/ai-photo', { method: 'POST', headers: { 'x-access-code': code }, body: fd });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401) { localStorage.removeItem('kd_code'); throw new Error('অ্যাক্সেস কোড ভুল'); }
+    if (!r.ok) throw new Error(j.error || 'এআই ত্রুটি');
+    localStorage.setItem('kd_code', code);
+    right(await finalize('data:image/jpeg;base64,' + j.image));
+  } catch (e) { right(null, e.message); }
+  S.busy = false; $('busy').classList.remove('on'); $('go').disabled = false;
+}
+const BULK = new URLSearchParams(location.search).has('bulk');
+if (BULK) { document.title = 'বাল্ক ফটো এডিট — কাজডেস্ক'; document.querySelector('header span').textContent = '🖼️ বাল্ক ফটো এডিট (সর্বোচ্চ ৪টি)'; S.imgs = []; }
+async function loadAll(files) {
+  files = [...files];
+  if (!BULK) return load(files[0]);
+  const ok = files.filter(f => /^image\/(jpeg|png|webp)$/.test(f.type) && f.size <= 6 * 1024 * 1024).slice(0, 4);
+  if (!ok.length) return alert('JPG/PNG/WebP ছবি দিন (প্রতিটি সর্বোচ্চ ৬ MB)');
+  S.imgs = await Promise.all(ok.map(f => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = URL.createObjectURL(f); })));
+  S.img = S.imgs[0]; stage(); left();
+}
+function cover(i) {
+  const c = h('canvas', { width: W, height: H }), x = c.getContext('2d');
+  x.fillStyle = S.bg; x.fillRect(0, 0, W, H);
+  const s = Math.max(W / i.width, H / i.height), w = i.width * s, hh = i.height * s;
+  x.drawImage(i, (W - w) / 2, (H - hh) / 2, w, hh); return c;
+}
+function bulkStage() {
+  $('stage').replaceChildren(
+    h('div', { style: 'display:grid;grid-template-columns:repeat(2,1fr);gap:14px;width:100%' }, ...S.imgs.map(i => { const c = cover(i); c.style.width = '100%'; return c; })),
+    h('div', { className: 'ctl' }, h('button', { className: 'ghost', onclick: () => { S.img = null; S.imgs = []; stage(); left(); } }, 'ছবি বদলান')),
+    h('p', { className: 'note', style: 'color:#9aa0c3' }, 'প্রতিটি ছবি মাঝখান থেকে ক্রপ হবে; একই সেটিংস সবগুলোতে লাগবে'),
+    h('div', { className: 'busy', id: 'busy' }, h('div', { className: 'spin' }), 'এআই ছবি তৈরি করছে…'));
+}
+function rightMany(urls, err) {
+  $('right').replaceChildren(h('h3', {}, `ফলাফল (${urls.length}/${S.imgs.length})`),
+    ...urls.flatMap((u, n) => [h('img', { src: u }), h('a', { className: 'btn', href: u, download: `kajdesk-${n + 1}.jpg` }, '⬇ ডাউনলোড ' + (n + 1))]),
+    err ? h('div', { className: 'err' }, err) : '');
+}
+async function generateBulk() {
+  if (S.busy || !S.imgs.length) return;
+  const code = localStorage.getItem('kd_code') || prompt('অ্যাক্সেস কোড দিন:');
+  if (!code) return;
+  S.busy = true; $('busy').classList.add('on'); $('go').disabled = true;
+  const urls = [], pr = buildPrompt();
+  try {
+    for (const i of S.imgs) {
+      const blob = await new Promise(ok => cover(i).toBlob(ok, 'image/jpeg', .95));
+      const fd = new FormData(); fd.append('prompt', pr); fd.append('image', blob, 'p.jpg');
+      const r = await fetch('/api/ai-photo', { method: 'POST', headers: { 'x-access-code': code }, body: fd });
+      const j = await r.json().catch(() => ({}));
+      if (r.status === 401) { localStorage.removeItem('kd_code'); throw new Error('অ্যাক্সেস কোড ভুল'); }
+      if (!r.ok) throw new Error(j.error || 'এআই ত্রুটি');
+      localStorage.setItem('kd_code', code);
+      urls.push(await finalize('data:image/jpeg;base64,' + j.image)); rightMany(urls);
+    }
+  } catch (e) { rightMany(urls, e.message); }
+  S.busy = false; $('busy').classList.remove('on'); $('go').disabled = false;
+}
+function finalize(u) {
+  return new Promise(ok => { const i = new Image(); i.onload = () => {
+    const c = h('canvas', { width: 531, height: 650 }), x = c.getContext('2d'), s = Math.max(531 / i.width, 650 / i.height), w = i.width * s, hh = i.height * s;
+    x.drawImage(i, (531 - w) / 2, (650 - hh) / 2, w, hh); ok(c.toDataURL('image/jpeg', .95)); }; i.src = u; });
+}
+function sheetCtl(u) {
+  const n = h('select', { style: 'width:100%;margin-top:8px;padding:8px;border-radius:10px;border:1px solid #ece7df;font:inherit' }, ...[4, 8, 12, 20].map(k => h('option', { value: k }, k + ' কপি (A4 শিট)')));
+  return h('div', {}, n, h('button', { className: 'btn', style: 'background:#4f46e5', onclick: () => sheet(u, +n.value) }, '🖨️ প্রিন্ট শিট ডাউনলোড'));
+}
+function sheet(u, n) {
+  const i = new Image(); i.onload = () => {
+    const c = h('canvas', { width: 2480, height: 3508 }), x = c.getContext('2d'), pw = 531, ph = 650, g = 20, cols = 4, l = (2480 - (cols * pw + (cols - 1) * g)) / 2;
+    x.fillStyle = '#fff'; x.fillRect(0, 0, 2480, 3508); x.strokeStyle = '#bbb'; x.lineWidth = 2;
+    for (let k = 0; k < n; k++) { const px = l + (k % cols) * (pw + g), py = 100 + Math.floor(k / cols) * (ph + g); x.drawImage(i, px, py, pw, ph); x.strokeRect(px, py, pw, ph); }
+    c.toBlob(b => h('a', { href: URL.createObjectURL(b), download: 'passport-sheet-A4.jpg' }).click(), 'image/jpeg', .95);
+  }; i.src = u;
+}
+try { const v = JSON.parse(localStorage.getItem('kd_set')); if (v) Object.assign(S, { profile: v.profile, bg: v.bg, ward: v.ward, enh: new Set(v.enh) }); } catch (e) {}
+left(); stage(); right(null);
+</script>
+</body>
+</html>
